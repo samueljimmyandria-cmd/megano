@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>About Mavis — Free tier, credits, and how it actually works</title>
+<meta name="description" content="A community-maintained reference about Mavis (MiniMax's agent) — pricing, free credits, how renewals work, and what to expect." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="meg-nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo">megano</a>
+    <ul class="nav-links">
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="index.html" class="active">About Mavis</a></li>
+      <li><a href="https://github.com/samueljimmyandria-cmd/megano" target="_blank" rel="noopener">Source</a></li>
+    </ul>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="eyebrow">Community Reference · Last updated June 2026</div>
+  <h1>About Mavis</h1>
+  <p>Everything we found out about Mavis (MiniMax's agent), how credits work, what the free tier actually gives you, and where to check the real numbers.</p>
+</section>
+
+<main class="container">
+
+  <div class="tldr">
+    <div class="tldr-title">// TL;DR</div>
+    <div class="tldr-text">
+      <strong>Mavis</strong> is the AI agent built by MiniMax (the company formerly known for Hailuo AI video). It comes in three forms: the desktop app, the web chat, and the <em>Agent Teams</em> multi-agent mode. You talk to it, it does stuff — code, research, deploy, write, you name it.<br><br>
+      <strong>The free tier gives you ~200 credits per day</strong>, refreshed just by logging in. It's <em>not</em> a one-shot bonus. Credits are also bounded by a <em>5-hour rolling window</em> and a <em>weekly quota</em> (the exact numbers for free users aren't published).
+    </div>
+  </div>
+
+  <h2><span class="num">01</span>What is Mavis, exactly?</h2>
+  <p>
+    <strong>Mavis</strong> — short for <em>MiniMax as a Jarvis</em> — is MiniMax's flagship agent product. It launched in its current form on <strong>May 13, 2026</strong>, when MiniMax renamed "MiniMax Agent" to Mavis and added an <em>Agent Teams</em> mode (multi-agent collaboration with a Leader/Worker/Verifier architecture).
+  </p>
+  <p>
+    Under the hood, Mavis runs on the <strong>MiniMax-M3</strong> model (a 1M-context multimodal model). It can drive a browser, edit local files (in the desktop app), call APIs, deploy sites, generate code, write documents, and orchestrate sub-agents for long-running tasks.
+  </p>
+  <div class="tags">
+    <span class="tag">Agent</span>
+    <span class="tag">Multi-agent teams</span>
+    <span class="tag">Browser + Desktop</span>
+    <span class="tag">Powered by MiniMax-M3</span>
+  </div>
+
+  <h2><span class="num">02</span>How does it get priced?</h2>
+  <p>MiniMax sells Mavis access through a system called <strong>Token Plan</strong>. It's a single subscription that unlocks Mavis, the MiniMax API, MiniMax Code, and the multimodal models (image / speech / music / video) — all under one credit pool.</p>
+  <p>There are three paid tiers. Prices in USD per month:</p>
+
+  <div class="tiers">
+    <div class="tier">
+      <div class="tier-name">Plus</div>
+      <div class="tier-price">$20 <span class="tier-price-unit">/month</span></div>
+      <p style="font-size:13px;margin-top:8px;">Personal projects, prototyping, light daily use.</p>
+      <ul>
+        <li>Supports ~3–4 concurrent agents</li>
+        <li>5-hour rolling quota + weekly quota</li>
+        <li>All models included (LLM, image, speech, music)</li>
+      </ul>
+    </div>
+    <div class="tier featured">
+      <div class="tier-name">Max</div>
+      <div class="tier-price">$50 <span class="tier-price-unit">/month</span></div>
+      <p style="font-size:13px;margin-top:8px;">Daily coding with agents, multimodal workflows.</p>
+      <ul>
+        <li>Supports ~4–5 concurrent agents</li>
+        <li>5-hour + weekly quotas (larger)</li>
+        <li>Priority during peak hours</li>
+      </ul>
+    </div>
+    <div class="tier">
+      <div class="tier-name">Ultra</div>
+      <div class="tier-price">$120 <span class="tier-price-unit">/month</span></div>
+      <p style="font-size:13px;margin-top:8px;">Heavy agent workflows, long-running tasks.</p>
+      <ul>
+        <li>Supports ~6–7 concurrent agents</li>
+        <li>Best-effort large quotas</li>
+        <li>Top priority at peak</li>
+      </ul>
+    </div>
+  </div>
+
+  <p>You can also buy <strong>prepaid Credits</strong> (valid for one year from purchase) without subscribing — these top up any plan or work standalone.</p>
+
+  <h2><span class="num">03</span>The free tier — what you actually get</h2>
+
+  <div class="fact">
+    <div class="fact-icon">🎁</div>
+    <div>
+      <div class="fact-label">Daily login bonus</div>
+      <div class="fact-text"><strong>~200 credits per day</strong>, refreshed just by logging in. Confirmed by MiniMax's own audio product page and multiple third-party reports.</div>
+    </div>
+  </div>
+
+  <div class="fact">
+    <div class="fact-icon">⚡</div>
+    <div>
+      <div class="fact-label">Signup bonus</div>
+      <div class="fact-text"><strong>200 credits</strong> one-shot bonus on first registration, in addition to the daily refill.</div>
+    </div>
+  </div>
+
+  <div class="fact">
+    <div class="fact-icon">⏱️</div>
+    <div>
+      <div class="fact-label">5-hour rolling window</div>
+      <div class="fact-text">Usage is bounded by a rolling 5-hour window on top of the daily quota — meant to throttle heavy bursts.</div>
+    </div>
+  </div>
+
+  <div class="fact">
+    <div class="fact-icon">📅</div>
+    <div>
+      <div class="fact-label">Weekly quota</div>
+      <div class="fact-text">There's also a separate weekly cap. MiniMax added this on top of the 5-hour window to stop power users from gaming the system.</div>
+    </div>
+  </div>
+
+  <div class="fact">
+    <div class="fact-icon">💱</div>
+    <div>
+      <div class="fact-label">Credit value</div>
+      <div class="fact-text">1 000 credits ≈ $1 USD. So 200 daily credits ≈ <strong>$0.20 / day of value</strong>.</div>
+    </div>
+  </div>
+
+  <div class="warn-box">
+    <span class="label">⚠ Important: exact numbers aren't fully public</span>
+    MiniMax does not publish the precise credit cost per message, the exact weekly cap for free users, or whether the chat where you talk to Mavis shares the same counter as the Hailuo Video or MaxClaw apps. The numbers above are best-effort from public sources and may shift.
+  </div>
+
+  <h2><span class="num">04</span>What "renewal" actually means</h2>
+  <p>There were two questions worth answering clearly:</p>
+  <p><strong>Q: Once I use up my free credits, are they gone forever?</strong></p>
+  <p>No. The <strong>daily login bonus refills every day</strong>. As long as you log in, you get ~200 fresh credits the next day. The signup bonus is one-shot, but the daily refill is recurring.</p>
+  <p><strong>Q: Do unused credits roll over?</strong></p>
+  <p>For paid plans, MiniMax explicitly says: <em>"Unused included quota does not carry over to the next billing cycle."</em> The same logic likely applies to the daily free credits — use them or lose them each day. Some Hailuo products allow short stacking (e.g. 7 days unused = up to 30 stored), but Mavis's rules aren't confirmed.</p>
+
+  <h2><span class="num">05</span>How to check your own balance</h2>
+  <p>Unfortunately, <strong>the dashboard experience is inconsistent</strong>. Community reports include:</p>
+  <ul style="margin: 12px 0 12px 24px; color: var(--text-muted);">
+    <li>Some users see live credit counters inside the Mavis chat UI itself (avatar menu or sidebar).</li>
+    <li>Others report the credit balance doesn't appear at all on the platform dashboard.</li>
+    <li>Some users only see usage when they hit a limit (an "out of credits" prompt with a renewal link).</li>
+  </ul>
+  <p>Best places to look:</p>
+  <ol style="margin: 12px 0 12px 24px; color: var(--text-muted);">
+    <li>Inside the Mavis chat / desktop app — check avatar, settings, or sidebar for a usage indicator.</li>
+    <li><a href="https://platform.minimax.io" style="color: var(--secondary);">platform.minimax.io</a> — log in and look for "Quota" or "Usage" in the account menu.</li>
+    <li>Hit your daily limit and watch for the error message — it'll tell you when the refill happens.</li>
+  </ol>
+
+  <h2><span class="num">06</span>Tips for free-tier users</h2>
+  <div class="fact">
+    <div class="fact-icon">💡</div>
+    <div class="fact-text"><strong>Log in every day.</strong> The daily refill requires a login. If you skip a day, you miss it.</div>
+  </div>
+  <div class="fact">
+    <div class="fact-icon">💡</div>
+    <div class="fact-text"><strong>Be specific in your prompts.</strong> Vague requests ("build me a website") burn more credits than focused ones ("make me a single-page HTML with header, 3 cards, footer").</div>
+  </div>
+  <div class="fact">
+    <div class="fact-icon">💡</div>
+    <div class="fact-text"><strong>Avoid mega-tasks.</strong> One big "do everything" prompt uses more tokens than 5 smaller focused ones. Break work down.</div>
+  </div>
+  <div class="fact">
+    <div class="fact-icon">💡</div>
+    <div class="fact-text"><strong>Tell Mavis to be concise.</strong> "Reply briefly" or "no essays, just the answer" cuts the credit cost per message significantly.</div>
+  </div>
+  <div class="fact">
+    <div class="fact-icon">💡</div>
+    <div class="fact-text"><strong>Use the desktop app</strong> for file-heavy tasks — it shares the same credit pool as the web chat.</div>
+  </div>
+
+  <h2><span class="num">07</span>The honest caveats</h2>
+  <p>
+    The information on this page is <strong>community-sourced</strong>, not from an official MiniMax pricing sheet. Free-tier specifics — exact credit cost per message, precise weekly caps, whether Mavis-chat and Hailuo-Video share one counter — are <strong>not publicly documented</strong>.
+  </p>
+  <p>If you need a definitive answer, the most reliable channels are:</p>
+  <ul style="margin: 12px 0 12px 24px; color: var(--text-muted);">
+    <li>The official docs at <a href="https://platform.minimax.io/docs" style="color: var(--secondary);">platform.minimax.io/docs</a></li>
+    <li>The MiniMax Discord at <a href="https://www.minimax.io/community/" style="color: var(--secondary);">minimax.io/community</a></li>
+    <li>Support email: <code>model@minimax.io</code></li>
+  </ul>
+
+  <h2><span class="num">08</span>Sources & references</h2>
+  <p>Every number on this page was cross-checked against at least two of the following sources:</p>
+
+  <ul class="sources">
+    <li>
+      <span class="src-title">MiniMax Audio & Music — official product page</span>
+      <a href="https://www.minimax.io/audio" target="_blank" rel="noopener">https://www.minimax.io/audio</a>
+      <div class="src-meta">"200 free credits on signup" — official MiniMax confirmation of the daily bonus mechanic.</div>
+    </li>
+    <li>
+      <span class="src-title">MiniMax — Token Plan overview (official docs)</span>
+      <a href="https://platform.minimax.io/docs/token-plan/intro" target="_blank" rel="noopener">https://platform.minimax.io/docs/token-plan/intro</a>
+      <div class="src-meta">5-hour rolling + weekly quotas, paid tiers (Plus/Max/Ultra), credit system explanation.</div>
+    </li>
+    <li>
+      <span class="src-title">MiniMax — Token Plan FAQ</span>
+      <a href="https://platform.minimax.io/docs/token-plan/faq" target="_blank" rel="noopener">https://platform.minimax.io/docs/token-plan/faq</a>
+      <div class="src-meta">What happens when you hit the limit. Token Plan vs. purchased Credits.</div>
+    </li>
+    <li>
+      <span class="src-title">MiniMax — Token Plan pricing</span>
+      <a href="https://platform.minimax.io/subscribe/token-plan" target="_blank" rel="noopener">https://platform.minimax.io/subscribe/token-plan</a>
+      <div class="src-meta">Plus $20 / Max $50 / Ultra $120 monthly. Credits valid one year from purchase.</div>
+    </li>
+    <li>
+      <span class="src-title">MiniMax — Product pricing overview</span>
+      <a href="https://platform.minimax.io/docs/pricing/overview" target="_blank" rel="noopener">https://platform.minimax.io/docs/pricing/overview</a>
+      <div class="src-meta">Real-time per-call vs. subscription plans.</div>
+    </li>
+    <li>
+      <span class="src-title">MiniMax — Subscription service terms (free user credit rules)</span>
+      <a href="https://agent.minimax.io/doc/en/credit-rules.html" target="_blank" rel="noopener">https://agent.minimax.io/doc/en/credit-rules.html</a>
+      <div class="src-meta">"Upon registration, users receive free credits to experience the Agent's task execution." Confirms free tier exists; amounts not disclosed.</div>
+    </li>
+    <li>
+      <span class="src-title">MiniMax — Agent changelog</span>
+      <a href="https://agent.minimax.io/docs/changelog" target="_blank" rel="noopener">https://agent.minimax.io/docs/changelog</a>
+      <div class="src-meta">"Credit & Usage Limit System: Clear prompts when credits are exhausted with direct links to subscription renewal."</div>
+    </li>
+    <li>
+      <span class="src-title">Skywork — MaxClaw credit & token guide</span>
+      <a href="https://skywork.ai/skypage/en/maxclaw-minimax-credits-tokens-guide/2061790959546322944" target="_blank" rel="noopener">https://skywork.ai/skypage/en/maxclaw-minimax-credits-tokens-guide/...</a>
+      <div class="src-meta">"Free-tier users receive 200 credits per day simply by logging in." Exchange rate: 1 000 credits = $1 USD.</div>
+    </li>
+    <li>
+      <span class="src-title">Reddit r/vibecoding — MiniMax weekly quota discussion</span>
+      <a href="https://www.reddit.com/r/vibecoding/comments/1rxwua3/minimax_just_switched_from_5hour_resets_to_weekly/" target="_blank" rel="noopener">https://www.reddit.com/r/vibecoding/comments/1rxwua3/...</a>
+      <div class="src-meta">Community confirmation that MiniMax switched from 5-hour to weekly quotas.</div>
+    </li>
+    <li>
+      <span class="src-title">Reddit r/HailuoAiOfficial — daily credits discussion</span>
+      <a href="https://www.reddit.com/r/HailuoAiOfficial/comments/1g3tpql/when_do_we_get_free_daily_credits_and_how_many/" target="_blank" rel="noopener">https://www.reddit.com/r/HailuoAiOfficial/comments/1g3tpql/...</a>
+      <div class="src-meta">Multiple users confirming the daily credit refresh pattern.</div>
+    </li>
+    <li>
+      <span class="src-title">Tencent News — Mavis launch coverage</span>
+      <a href="https://news.qq.com/rain/a/20260513A05EYF00" target="_blank" rel="noopener">https://news.qq.com/rain/a/20260513A05EYF00</a>
+      <div class="src-meta">Official announcement: MiniMax Agent renamed to Mavis on May 13, 2026, with Agent Teams + merged Token/Agent Plan.</div>
+    </li>
+    <li>
+      <span class="src-title">MiniMax — Agent Team launch blog post</span>
+      <a href="https://www.minimax.io/blog/minimax-agent-team-long-running-1779893953" target="_blank" rel="noopener">https://www.minimax.io/blog/minimax-agent-team-long-running-1779893953</a>
+      <div class="src-meta">Long-form technical write-up about Mavis architecture (Leader/Worker/Verifier).</div>
+    </li>
+  </ul>
+
+</main>
+
+<footer>
+  <p>This page is community-maintained and not affiliated with MiniMax. Last verified June 2026. · <a href="https://github.com/samueljimmyandria-cmd/megano/tree/main/aboutmavis">Edit on GitHub</a></p>
+</footer>
+
+</body>
+</html>
