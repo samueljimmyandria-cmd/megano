@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <title>PalmID · Reconnaissance palmaire & faciale</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <button id="burgerBtn" class="icon-btn" aria-label="Menu">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+        <div class="brand">
+            <div class="brand-mark"><span class="material-symbols-outlined">back_hand</span></div>
+            <div>
+                <h1>PalmID</h1>
+                <p class="brand-sub">Reconnaissance palmaire & faciale</p>
+            </div>
+        </div>
+        <div class="header-status" id="modelStatus">
+            <span class="dot dot-loading"></span>
+            <span>Chargement…</span>
+        </div>
+    </header>
+
+    <!-- Drawer -->
+    <div id="drawerOverlay" class="drawer-overlay"></div>
+    <aside id="drawer" class="drawer" aria-label="Liste des utilisateurs">
+        <div class="drawer-head">
+            <h2>Utilisateurs</h2>
+            <button id="closeDrawer" class="icon-btn" aria-label="Fermer">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div id="drawerList" class="drawer-list">
+            <p class="muted">Chargement…</p>
+        </div>
+        <div class="drawer-foot">
+            <p class="muted small">Les données restent dans votre navigateur (localStorage).</p>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main id="mainContent" class="main-content">
+        <!-- Toast container -->
+        <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+        <!-- HOME -->
+        <section id="homeView" class="view active">
+            <div class="hero">
+                <div class="hero-glow"></div>
+                <div class="hero-content">
+                    <span class="badge"><span class="material-symbols-outlined">bolt</span> Démo biométrique</span>
+                    <h2>Connectez-vous avec votre <span class="grad-text">main</span> ou votre <span class="grad-text">visage</span></h2>
+                    <p>Une authentification sans mot de passe, qui fonctionne entièrement dans votre navigateur. Aucune image n'est envoyée sur internet.</p>
+                    <div class="hero-actions">
+                        <button id="goToLoginBtn" class="btn btn-primary btn-lg">
+                            <span class="material-symbols-outlined">login</span>
+                            Se connecter
+                        </button>
+                        <button id="heroAddBtn" class="btn btn-ghost btn-lg">
+                            <span class="material-symbols-outlined">person_add</span>
+                            Nouvel utilisateur
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <div class="feature-icon ic-blue">
+                        <span class="material-symbols-outlined">back_hand</span>
+                    </div>
+                    <h3>Géométrie palmaire</h3>
+                    <p>21 points de repère, normalisation par rotation et échelle. Insensible à la distance.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="feature-icon ic-purple">
+                        <span class="material-symbols-outlined">face</span>
+                    </div>
+                    <h3>Reconnaissance faciale</h3>
+                    <p>FaceAPI.js avec descripteur 128-d. Capture en direct, anti-triche par image.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="feature-icon ic-amber">
+                        <span class="material-symbols-outlined">lock</span>
+                    </div>
+                    <h3>PIN de secours</h3>
+                    <p>En cas de score ambigu, le PIN permet de valider manuellement l'identité.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="feature-icon ic-green">
+                        <span class="material-symbols-outlined">offline_bolt</span>
+                    </div>
+                    <h3>100% local</h3>
+                    <p>Aucun serveur. Vos données biométriques ne quittent jamais votre appareil.</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- ENROLL -->
+        <section id="enrollView" class="view">
+            <div class="page-head">
+                <div>
+                    <h2 id="enrollTitle">Inscription</h2>
+                    <p class="muted" id="enrollSubtitle">Capturez 3 fois votre main pour créer votre profil.</p>
+                </div>
+                <button id="cancelEnrollBtn" class="icon-btn" aria-label="Annuler">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="enroll-layout">
+                <div class="card stage-card">
+                    <div class="stage-frame">
+                        <video id="videoEnroll" autoplay playsinline muted></video>
+                        <canvas id="overlayEnroll"></canvas>
+                        <canvas id="overlayFaceEnroll" class="hidden"></canvas>
+                        <div class="stage-overlay">
+                            <div class="corner tl"></div>
+                            <div class="corner tr"></div>
+                            <div class="corner bl"></div>
+                            <div class="corner br"></div>
+                        </div>
+                        <div class="stage-hint" id="videoHint">
+                            <span class="material-symbols-outlined">videocam_off</span>
+                            <span>Caméra en attente…</span>
+                        </div>
+                    </div>
+
+                    <div class="stage-actions">
+                        <div class="step-pills" id="stepPills">
+                            <span class="step-pill active" data-step="1"><span>1</span> Main ×3</span>
+                            <span class="step-pill" data-step="2"><span>2</span> Visage (option)</span>
+                            <span class="step-pill" data-step="3"><span>3</span> Enregistrer</span>
+                        </div>
+
+                        <div id="handCaptureSection" class="action-block">
+                            <button id="capHandBtn" class="btn btn-accent btn-lg" disabled>
+                                <span class="material-symbols-outlined">photo_camera</span>
+                                <span id="capHandLabel">Capturer main (3 restantes)</span>
+                            </button>
+                        </div>
+
+                        <div id="faceCaptureSection" class="action-block hidden">
+                            <button id="capFaceBtn" class="btn btn-face btn-lg" disabled>
+                                <span class="material-symbols-outlined">face</span>
+                                Capturer le visage
+                            </button>
+                            <p class="hint-text" id="faceCaptureStatus"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="card side-card">
+                    <h3>Profil</h3>
+                    <label class="field">
+                        <span>Nom complet</span>
+                        <input type="text" id="username" placeholder="ex. Marie Dupont" autocomplete="off">
+                        <span id="nameDisplay" class="name-display hidden"></span>
+                    </label>
+                    <label class="field">
+                        <span>PIN de secours <em class="muted">(optionnel)</em></span>
+                        <input type="password" id="pinEnroll" maxlength="6" inputmode="numeric" placeholder="••••">
+                    </label>
+
+                    <button id="saveEnrollBtn" class="btn btn-primary btn-block">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        Enregistrer le profil
+                    </button>
+
+                    <div id="statusMsgEnroll" class="status-banner"></div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- LOGIN -->
+        <section id="loginView" class="view">
+            <div class="page-head">
+                <div>
+                    <h2>Connexion</h2>
+                    <p class="muted">Placez votre main ou votre visage face à la caméra.</p>
+                </div>
+                <button id="cancelLoginBtn" class="icon-btn" aria-label="Annuler">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="enroll-layout">
+                <div class="card stage-card">
+                    <div class="stage-frame">
+                        <video id="videoLogin" autoplay playsinline muted></video>
+                        <canvas id="overlayLogin"></canvas>
+                        <canvas id="overlayFaceLogin" class="hidden"></canvas>
+                        <div class="stage-overlay">
+                            <div class="corner tl"></div>
+                            <div class="corner tr"></div>
+                            <div class="corner bl"></div>
+                            <div class="corner br"></div>
+                        </div>
+                        <div id="countdownDisplay" class="countdown hidden"></div>
+                        <div class="stage-hint" id="videoHintLogin">
+                            <span class="material-symbols-outlined">videocam_off</span>
+                            <span>Caméra en attente…</span>
+                        </div>
+                    </div>
+
+                    <div class="stage-actions">
+                        <div class="login-mode-row">
+                            <button id="startLoginBtn" class="btn btn-accent btn-lg">
+                                <span class="material-symbols-outlined">search</span>
+                                Identifier (5 s)
+                            </button>
+                            <button id="startLoginFastBtn" class="btn btn-speed btn-lg">
+                                <span class="material-symbols-outlined">flash_on</span>
+                                Rapide (1 s)
+                            </button>
+                        </div>
+                        <p id="statusMsgLogin" class="status-banner">Choisissez un mode d'identification.</p>
+                    </div>
+                </div>
+
+                <aside class="card side-card">
+                    <div id="loginIdentity" class="identity-box hidden">
+                        <span class="material-symbols-outlined">person</span>
+                        <span id="loginIdentityText"></span>
+                    </div>
+
+                    <input type="password" id="loginPinInput" class="pin-input hidden" maxlength="6" placeholder="PIN secours">
+
+                    <h3>Scores de correspondance</h3>
+                    <div id="loginScores" class="score-list">
+                        <p class="muted small">Aucun score pour l'instant.</p>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom nav -->
+    <nav class="bottom-nav" aria-label="Navigation principale">
+        <button id="navHomeBtn" class="nav-btn active">
+            <span class="material-symbols-outlined">home</span>
+            <span>Accueil</span>
+        </button>
+        <button id="navListBtn" class="nav-btn">
+            <span class="material-symbols-outlined">group</span>
+            <span>Liste</span>
+        </button>
+        <button id="navAddBtn" class="nav-fab" aria-label="Ajouter">
+            <span class="material-symbols-outlined">add</span>
+        </button>
+        <button id="navLoginBtn" class="nav-btn">
+            <span class="material-symbols-outlined">login</span>
+            <span>Connexion</span>
+        </button>
+        <button id="navSettingsBtn" class="nav-btn">
+            <span class="material-symbols-outlined">settings</span>
+            <span>Réglages</span>
+        </button>
+    </nav>
+
+    <script src="app.js"></script>
+</body>
+</html>
