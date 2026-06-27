@@ -73,6 +73,69 @@ const cancelLoginBtn = $('cancelLoginBtn');
 
 const modelStatus = $('modelStatus');
 const toastContainer = $('toastContainer');
+const modelLoader = $('modelLoader');
+const modelLoaderText = $('modelLoaderText');
+const liveIndicator = $('liveIndicator');
+const liveIndicatorText = $('liveIndicatorText');
+const filmstrip = $('filmstrip');
+
+// ==================== HAPTIC ====================
+function haptic(pattern = 30) {
+    if ('vibrate' in navigator) {
+        try { navigator.vibrate(pattern); } catch (e) {}
+    }
+}
+
+function hapticSuccess() { haptic([20, 50, 20]); }
+function hapticError() { haptic([60, 30, 60]); }
+
+// ==================== LIVE INDICATOR ====================
+function setLiveState(state, text) {
+    liveIndicator.className = 'live-indicator ' + state;
+    liveIndicatorText.textContent = text;
+}
+
+// ==================== FILMSTRIP ====================
+const FILM_MAX = 6;
+
+function pushFilmThumbnail(canvas) {
+    const ts = new Date();
+    const time = `${String(ts.getMinutes()).padStart(2,'0')}:${String(ts.getSeconds()).padStart(2,'0')}`;
+    const wrap = document.createElement('div');
+    wrap.className = 'film-thumb recent';
+    const c2 = document.createElement('canvas');
+    c2.width = 112;
+    c2.height = 84;
+    const ctx = c2.getContext('2d');
+    ctx.drawImage(canvas, 0, 0, c2.width, c2.height);
+    wrap.appendChild(c2);
+    const tsEl = document.createElement('span');
+    tsEl.className = 'ts';
+    tsEl.textContent = time;
+    wrap.appendChild(tsEl);
+    filmstrip.insertBefore(wrap, filmstrip.firstChild);
+    // remove "recent" class from older items
+    [...filmstrip.children].forEach((el, i) => {
+        if (i > 0) el.classList.remove('recent');
+    });
+    // cap length
+    while (filmstrip.children.length > FILM_MAX) {
+        filmstrip.removeChild(filmstrip.lastChild);
+    }
+}
+
+function clearFilmstrip() {
+    filmstrip.innerHTML = '';
+}
+
+function capturePreview(video) {
+    if (video.readyState < 2) return null;
+    const c = document.createElement('canvas');
+    c.width = 160;
+    c.height = 120;
+    c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+    return c;
+}
 
 // ==================== STATE ====================
 let hands = null;                  // Instance MediaPipe Hands UNIQUE
@@ -429,12 +492,14 @@ function stopFaceLive() {
 async function stopAllCameras() {
     activeMode = null;
     activeVideo = null;
+    liveScanActive = false;
     if (loginTimer) {
         clearInterval(loginTimer);
         loginTimer = null;
         countdownDisplay.classList.add('hidden');
     }
     stopFaceLive();
+    if (typeof setLiveState === 'function') setLiveState('idle', 'Arrêté');
 
     const stops = [];
     if (cameraEnroll) {
@@ -501,7 +566,14 @@ function switchView(viewId) {
         loginIdentityDiv.classList.add('hidden');
         loginScoresDiv.innerHTML = '<p class="muted small">Aucun score pour l\'instant.</p>';
         statusMsgLogin.textContent = 'Caméra en initialisation…';
-        startLoginCamera();
+        clearFilmstrip();
+        setLiveState('idle', 'En attente');
+        startLoginCamera().then(() => {
+            // Dès que la caméra est prête, lancer un scan live automatiquement
+            if (activeMode === 'login' && cameraLogin) {
+                startLiveLoginScan(5);
+            }
+        });
     } else {
         activeMode = null;
         pendingFaceUpgradeUser = null;
@@ -643,7 +715,7 @@ function startFaceLiveVisualization(videoElement, overlayCanvas) {
         sizeCanvas();
         try {
             const detection = await faceapi.detectSingleFace(liveFaceVideo,
-                new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 })
+                new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 })
             ).withFaceLandmarks().withFaceDescriptor();
 
             if (!liveFaceOverlay) return;
@@ -667,7 +739,7 @@ function startFaceLiveVisualization(videoElement, overlayCanvas) {
         } catch (e) {
             // silencieux
         }
-    }, 500);
+    }, 250); // 4 fps : lisse mais léger
 }
 
 // ==================== FACE CAPTURE ====================
@@ -846,7 +918,14 @@ saveEnrollBtn.onclick = async () => {
 };
 
 // ==================== LOGIN ====================
-function startLoginCountdown(durationSec) {
+// Mode "live scan" : scan continu, mise à jour des scores en temps réel,
+// auto-finalisation dès qu'un match confiant est trouvé (ou après maxDuration).
+
+let liveScanActive = false;
+let liveScanLastPush = 0;
+let liveScanStartedAt = 0;
+
+async function startLiveLoginScan(maxDurationSec = 5) {
     const users = loadUsers();
     if (users.length === 0) {
         setStatus(statusMsgLogin, 'Aucun utilisateur enregistré.', 'warn');
@@ -856,93 +935,194 @@ function startLoginCountdown(durationSec) {
         setStatus(statusMsgLogin, 'Caméra non démarrée.', 'error');
         return;
     }
-    if (loginTimer || isLoggingIn) return;
+    if (liveScanActive) return;
 
-    isLoggingIn = true;
+    liveScanActive = true;
+    liveScanStartedAt = Date.now();
     startLoginBtn.disabled = true;
     startLoginFastBtn.disabled = true;
     loginPinInput.classList.add('hidden');
     loginIdentityDiv.classList.add('hidden');
-    loginScoresDiv.innerHTML = '<p class="muted small">Analyse…</p>';
+    loginScoresDiv.innerHTML = '<p class="muted small">Scan live en cours…</p>';
+    clearFilmstrip();
     countdownDisplay.classList.remove('hidden');
+    setLiveState('detecting', 'Scan actif');
 
     const hasAnyFace = users.some(u => u.faceDescriptors && u.faceDescriptors.length > 0);
     if (hasAnyFace) {
-        initFaceApi().then(ok => {
-            if (ok && activeMode === 'login') startFaceLiveVisualization(videoLogin, overlayFaceLogin);
-        });
+        try {
+            await initFaceApi();
+            if (liveScanActive && activeMode === 'login') {
+                startFaceLiveVisualization(videoLogin, overlayFaceLogin);
+            }
+        } catch (e) {}
     }
 
-    let secondsLeft = durationSec;
-    countdownDisplay.textContent = `⏳ ${secondsLeft}`;
+    let secondsLeft = maxDurationSec;
+    countdownDisplay.textContent = `⏳ ${secondsLeft}s`;
 
     loginTimer = setInterval(async () => {
         secondsLeft--;
         if (secondsLeft > 0) {
-            countdownDisplay.textContent = `⏳ ${secondsLeft}`;
-            if (lastLiveDescriptor) {
-                clearInterval(loginTimer);
-                loginTimer = null;
-                countdownDisplay.classList.add('hidden');
-                stopFaceLive();
-                await performLogin(lastLiveDescriptor);
-                isLoggingIn = false;
-                startLoginBtn.disabled = false;
-                startLoginFastBtn.disabled = false;
+            countdownDisplay.textContent = `⏳ ${secondsLeft}s`;
+            // Snapshot preview + tentative d'identification live
+            await tickLiveScan();
+            // Auto-stop si match confiant + écart net
+            if (shouldAutoFinalize()) {
+                finalizeLiveLogin();
             }
         } else {
-            clearInterval(loginTimer);
-            loginTimer = null;
-            countdownDisplay.classList.add('hidden');
-            stopFaceLive();
-
-            let faceDesc = lastLiveDescriptor;
-            if (!faceDesc && hasAnyFace) {
-                setStatus(statusMsgLogin, 'Capture avancée du visage…');
-                try { faceDesc = await advancedCaptureFace(videoLogin); } catch (e) {}
-            }
-            await performLogin(faceDesc);
-            isLoggingIn = false;
-            startLoginBtn.disabled = false;
-            startLoginFastBtn.disabled = false;
+            finalizeLiveLogin();
         }
     }, 1000);
 }
 
-startLoginBtn.onclick = () => startLoginCountdown(5);
-startLoginFastBtn.onclick = () => startLoginCountdown(1);
-
-async function performLogin(queryFaceDescriptor = null) {
+async function tickLiveScan() {
     const users = loadUsers();
     const handDetected = lastHandVectorLogin && lastHandVectorLogin.length > 0;
+    const faceDetected = !!lastLiveDescriptor;
 
-    if (!handDetected && !queryFaceDescriptor) {
-        setStatus(statusMsgLogin, '❌ Aucune biométrie détectée.', 'error');
-        loginScoresDiv.innerHTML = '<p class="muted small">Présentez une main ou un visage.</p>';
-        loginIdentityDiv.classList.add('hidden');
+    if (!handDetected && !faceDetected) {
+        setLiveState('idle', 'Aucune détection');
         return;
     }
 
-    const scores = users.map(u => {
-        let handScore = null, faceScore = null;
+    setLiveState('detecting', handDetected && faceDetected ? 'Main + visage' : (faceDetected ? 'Visage' : 'Main'));
 
+    // Throttle thumbnails : 1 par seconde max
+    const now = Date.now();
+    if (now - liveScanLastPush > 800) {
+        const snap = capturePreview(videoLogin);
+        if (snap) pushFilmThumbnail(snap);
+        liveScanLastPush = now;
+    }
+
+    // Calculer scores live
+    const scores = computeScores(users, lastHandVectorLogin, lastLiveDescriptor);
+    renderLiveScores(scores);
+    liveScanLastScores = scores;
+}
+
+let liveScanLastScores = null;
+
+function computeScores(users, handVec, faceDesc) {
+    const handDetected = handVec && handVec.length > 0;
+    return users.map(u => {
+        let handScore = null, faceScore = null;
         if (handDetected && u.handVectors && u.handVectors.length > 0) {
             let total = 0;
-            for (const v of u.handVectors) total += compareHandVectors(lastHandVectorLogin, v);
+            for (const v of u.handVectors) total += compareHandVectors(handVec, v);
             handScore = total / u.handVectors.length;
         }
-
-        if (queryFaceDescriptor && u.faceDescriptors && u.faceDescriptors.length > 0) {
+        if (faceDesc && u.faceDescriptors && u.faceDescriptors.length > 0) {
             let total = 0;
             for (const descArr of u.faceDescriptors) {
-                const dist = faceapiEuclidean(queryFaceDescriptor, descArr);
+                const dist = faceapiEuclidean(faceDesc, descArr);
                 total += Math.max(0, 1 - dist / 0.6);
             }
             faceScore = total / u.faceDescriptors.length;
         }
-
         return { name: u.name, score: (handScore || 0) + (faceScore || 0), handScore, faceScore };
-    });
+    }).sort((a, b) => b.score - a.score);
+}
+
+function renderLiveScores(scores) {
+    if (!scores || scores.length === 0) {
+        loginScoresDiv.innerHTML = '<p class="muted small">Aucun utilisateur.</p>';
+        return;
+    }
+    loginScoresDiv.innerHTML = scores.map((s, i) => `
+        <div class="score-item ${i === 0 ? 'top' : ''}">
+            <div>
+                <div class="score-name">${escapeHtml(s.name)}</div>
+                <div class="score-detail">
+                    ${s.handScore !== null ? `👋 ${(s.handScore * 100).toFixed(0)}%` : ''}
+                    ${s.faceScore !== null ? `🧑 ${(s.faceScore * 100).toFixed(0)}%` : ''}
+                </div>
+            </div>
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:${Math.min(s.score * 100, 100)}%"></div></div>
+            <div class="score-pct">${(s.score * 100).toFixed(1)}%</div>
+        </div>
+    `).join('');
+}
+
+function shouldAutoFinalize() {
+    if (!liveScanLastScores || liveScanLastScores.length === 0) return false;
+    const best = liveScanLastScores[0];
+    const second = liveScanLastScores[1];
+    if (best.score < 0.35) return false; // pas assez confiant
+    if (second) {
+        const gap = best.score - second.score;
+        if (gap < 0.08) return false; // pas assez d'écart
+    }
+    // on a attendu au moins 1s
+    return Date.now() - liveScanStartedAt > 1000;
+}
+
+async function finalizeLiveLogin() {
+    if (loginTimer) { clearInterval(loginTimer); loginTimer = null; }
+    countdownDisplay.classList.add('hidden');
+    stopFaceLive();
+    liveScanActive = false;
+    startLoginBtn.disabled = false;
+    startLoginFastBtn.disabled = false;
+
+    setLiveState('idle', 'Terminé');
+
+    // Si on a déjà des scores live, on les finalise ; sinon on tente une capture avancée
+    let faceDesc = lastLiveDescriptor;
+    const users = loadUsers();
+    const hasAnyFace = users.some(u => u.faceDescriptors && u.faceDescriptors.length > 0);
+    if (!faceDesc && hasAnyFace) {
+        try {
+            setStatus(statusMsgLogin, 'Capture avancée du visage…');
+            faceDesc = await advancedCaptureFace(videoLogin);
+        } catch (e) {}
+    }
+    await performLogin(faceDesc, liveScanLastScores);
+}
+
+// Mode manuel : on capture tout de suite avec la dernière donnée dispo
+async function performManualLogin() {
+    if (!cameraLogin) {
+        setStatus(statusMsgLogin, 'Caméra non démarrée.', 'error');
+        return;
+    }
+    if (liveScanActive) return;
+    setStatus(statusMsgLogin, 'Capture instantanée…');
+    let faceDesc = lastLiveDescriptor;
+    if (!faceDesc) {
+        try { await initFaceApi(); } catch (e) {}
+        try { faceDesc = await advancedCaptureFace(videoLogin); } catch (e) {}
+    }
+    await performLogin(faceDesc);
+}
+
+startLoginBtn.onclick = () => startLiveLoginScan(5);
+startLoginFastBtn.onclick = () => startLiveLoginScan(1);
+
+async function performLogin(queryFaceDescriptor = null, precomputedScores = null) {
+    const users = loadUsers();
+    const handDetected = lastHandVectorLogin && lastHandVectorLogin.length > 0;
+
+    if (!handDetected && !queryFaceDescriptor && !precomputedScores) {
+        setStatus(statusMsgLogin, '❌ Aucune biométrie détectée.', 'error');
+        loginScoresDiv.innerHTML = '<p class="muted small">Présentez une main ou un visage.</p>';
+        loginIdentityDiv.classList.add('hidden');
+        hapticError();
+        return;
+    }
+
+    let scores;
+    if (precomputedScores && precomputedScores.length > 0) {
+        scores = precomputedScores;
+        // Si on a maintenant un descripteur visage plus récent, on l'intègre
+        if (queryFaceDescriptor) {
+            scores = computeScores(users, lastHandVectorLogin, queryFaceDescriptor);
+        }
+    } else {
+        scores = computeScores(users, lastHandVectorLogin, queryFaceDescriptor);
+    }
 
     scores.sort((a, b) => b.score - a.score);
     const best = scores[0];
@@ -969,6 +1149,9 @@ async function performLogin(queryFaceDescriptor = null) {
         loginPinInput.classList.add('hidden');
         setStatus(statusMsgLogin, `✅ Identifié : ${best.name}`, 'success');
         toast(`Bienvenue ${best.name}`, 'success', 'check_circle');
+        hapticSuccess();
+        loginIdentityDiv.classList.add('success-flash');
+        setTimeout(() => loginIdentityDiv.classList.remove('success-flash'), 700);
     } else {
         loginPinInput.classList.remove('hidden');
         loginPinInput.value = '';
@@ -976,19 +1159,7 @@ async function performLogin(queryFaceDescriptor = null) {
         setStatus(statusMsgLogin, `⚠️ ${reason}. Confirmez avec le PIN.`, 'warn');
     }
 
-    loginScoresDiv.innerHTML = scores.map((s, i) => `
-        <div class="score-item ${i === 0 ? 'top' : ''}">
-            <div>
-                <div class="score-name">${escapeHtml(s.name)}</div>
-                <div class="score-detail">
-                    ${s.handScore !== null ? `👋 ${(s.handScore * 100).toFixed(0)}%` : ''}
-                    ${s.faceScore !== null ? `🧑 ${(s.faceScore * 100).toFixed(0)}%` : ''}
-                </div>
-            </div>
-            <div class="score-bar-bg"><div class="score-bar-fill" style="width:${Math.min(s.score * 100, 100)}%"></div></div>
-            <div class="score-pct">${(s.score * 100).toFixed(1)}%</div>
-        </div>
-    `).join('');
+    renderLiveScores(scores);
 
     loginPinInput.onkeydown = (e) => {
         if (e.key === 'Enter') {
@@ -1000,8 +1171,10 @@ async function performLogin(queryFaceDescriptor = null) {
                 loginIdentityText.innerHTML = `<strong>${escapeHtml(found.name)}</strong> · PIN validé`;
                 loginIdentityDiv.classList.remove('warn');
                 toast(`Bienvenue ${found.name}`, 'success', 'check_circle');
+                hapticSuccess();
             } else {
                 setStatus(statusMsgLogin, '❌ PIN incorrect', 'error');
+                hapticError();
             }
         }
     };
@@ -1036,15 +1209,26 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 // ==================== INIT ====================
+let modelsLoaded = { mp: false, face: false };
+
 async function initAll() {
     setModelStatus('', 'Chargement…');
+    modelLoader.classList.remove('hidden');
+    modelLoaderText.textContent = 'Téléchargement des modèles IA…';
+
     try {
         await initMediaPipe();
+        modelsLoaded.mp = true;
+        setModelStatus('', 'Visage…');
+        modelLoaderText.textContent = 'Chargement reconnaissance faciale…';
         await initFaceApi();
+        modelsLoaded.face = true;
         setModelStatus('ready', 'IA prête');
-        toast('Modèles chargés', 'success', 'check_circle', 2500);
+        modelLoader.classList.add('hidden');
+        toast('Modèles chargés · vous êtes prêt', 'success', 'check_circle', 2500);
     } catch (err) {
         setModelStatus('error', 'Erreur');
+        modelLoaderText.textContent = 'Erreur de chargement : ' + (err.message || 'inconnue');
         toast('Erreur chargement modèles', 'error', 'error');
     }
     renderDrawerList();
