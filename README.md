@@ -10,6 +10,7 @@ Megano is an experimental creative platform — single-file HTML/CSS/JS demos, d
 - **`demo.html`** — 18,000-particle spiral galaxy (Three.js, WebGL)
 - **`playground.html`** — Interactive particle field with mouse physics (Canvas 2D)
 - **`about.html`** — Manifesto and stack details
+- **`palmid/`** — Reconnaissance biométrique (main + visage) en pur navigateur
 
 ## Stack
 
