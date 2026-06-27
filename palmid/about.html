@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>PalmID — Comment ça marche · Mavis Megano</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body { background: var(--bg); }
+        .doc-wrap { max-width: 760px; margin: 0 auto; padding: 40px 20px 120px; }
+        .doc-wrap h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -0.025em; color: var(--text-strong); line-height: 1.1; margin-bottom: 8px; }
+        .doc-wrap .lead { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 32px; }
+        .doc-wrap h2 { font-size: 1.4rem; font-weight: 700; color: var(--text-strong); margin: 40px 0 12px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+        .doc-wrap h2 .material-symbols-outlined { color: var(--primary-light); }
+        .doc-wrap h3 { font-size: 1rem; font-weight: 600; color: var(--primary-light); margin: 20px 0 8px; }
+        .doc-wrap p, .doc-wrap li { color: var(--text); line-height: 1.7; }
+        .doc-wrap ul { padding-left: 22px; margin: 12px 0; }
+        .doc-wrap li { margin-bottom: 6px; }
+        .doc-wrap code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; padding: 2px 6px; background: var(--surface-2); border-radius: 6px; color: var(--accent); }
+        .doc-wrap pre { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-x: auto; margin: 16px 0; }
+        .doc-wrap pre code { background: none; padding: 0; color: var(--text); }
+        .doc-nav { display: flex; gap: 12px; margin-top: 48px; flex-wrap: wrap; }
+        .doc-nav a { display: inline-flex; align-items: center; gap: 6px; padding: 12px 20px; background: var(--grad-primary); color: white; border-radius: 14px; text-decoration: none; font-weight: 600; transition: filter 0.2s; }
+        .doc-nav a:hover { filter: brightness(1.1); }
+        .doc-nav a.ghost { background: var(--surface); border: 1px solid var(--border-strong); }
+        .doc-back { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); text-decoration: none; margin-bottom: 24px; font-weight: 500; }
+        .doc-back:hover { color: var(--text-strong); }
+        .arch-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin: 20px 0; }
+        .arch-card h3 { margin-top: 0; }
+        .arch-flow { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; margin: 16px 0; }
+        .arch-step { flex: 1 1 180px; padding: 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; position: relative; }
+        .arch-step .num { position: absolute; top: 8px; right: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-faint); }
+        .arch-step strong { color: var(--primary-light); display: block; margin-bottom: 4px; }
+        .arch-step span { font-size: 0.85rem; color: var(--text-muted); }
+        .arch-step .icon { font-size: 24px; color: var(--accent); margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="doc-wrap">
+        <a href="../index.html" class="doc-back">
+            <span class="material-symbols-outlined">arrow_back</span>
+            Retour au hub
+        </a>
+
+        <h1>PalmID</h1>
+        <p class="lead">Une authentification biométrique multimodale (main + visage) qui tourne 100% dans votre navigateur.</p>
+
+        <h2><span class="material-symbols-outlined">architecture</span> Architecture</h2>
+
+        <div class="arch-card">
+            <h3>Pipeline en 3 étapes</h3>
+            <div class="arch-flow">
+                <div class="arch-step">
+                    <span class="num">01</span>
+                    <div class="icon"><span class="material-symbols-outlined">videocam</span></div>
+                    <strong>Capture</strong>
+                    <span>WebRTC → flux caméra live</span>
+                </div>
+                <div class="arch-step">
+                    <span class="num">02</span>
+                    <div class="icon"><span class="material-symbols-outlined">scatter_plot</span></div>
+                    <strong>Extraction</strong>
+                    <span>MediaPipe Hands → 21 points · FaceAPI → descripteur 128-d</span>
+                </div>
+                <div class="arch-step">
+                    <span class="num">03</span>
+                    <div class="icon"><span class="material-symbols-outlined">match_word</span></div>
+                    <strong>Matching</strong>
+                    <span>Distance euclidienne + fusion multi-modale</span>
+                </div>
+            </div>
+        </div>
+
+        <h2><span class="material-symbols-outlined">back_hand</span> Reconnaissance palmaire</h2>
+
+        <p><strong>MediaPipe Hands</strong> détecte 21 points de repère sur la main en temps réel. Au lieu de comparer les coordonnées brutes (qui varient avec la distance et l'orientation), on extrait un vecteur de caractéristiques <em>invariant</em> :</p>
+
+        <ul>
+            <li><strong>Rotation</strong> : le repère est pivoté pour aligner l'axe poignet→index MCP sur X</li>
+            <li><strong>Normalisation</strong> : toutes les distances sont divisées par la distance base pour ignorer l'échelle</li>
+            <li><strong>Vecteur final</strong> : 5 longueurs de doigt + 1 largeur de paume + 4 angles interdigitaux</li>
+        </ul>
+
+        <p>La similarité est une distance euclidienne normalisée, convertie en score 0–100 %.</p>
+
+        <h2><span class="material-symbols-outlined">face</span> Reconnaissance faciale</h2>
+
+        <p><strong>face-api.js</strong> utilise un réseau de neurones convolutif pour produire un descripteur facial de 128 dimensions. Deux visages sont comparés par distance euclidienne : plus la distance est petite, plus ils se ressemblent.</p>
+
+        <p>Pour augmenter la robustesse en conditions difficiles, on applique :</p>
+        <ul>
+            <li>Auto-contrast (percentiles 2 % / 98 %) sur l'image</li>
+            <li>Tentatives avec plusieurs niveaux de zoom (80 %, 60 %, 40 %, 30 %)</li>
+            <li>Deux détecteurs : <code>TinyFaceDetector</code> + <code>SsdMobilenetv1</code></li>
+        </ul>
+
+        <h2><span class="material-symbols-outlined">merge_type</span> Fusion multimodale</h2>
+
+        <p>Les deux scores sont additionnés (chacun max 1.0, total max 2.0). Un utilisateur est validé si :</p>
+        <ul>
+            <li><strong>Score total &gt; 20 %</strong> ET</li>
+            <li><strong>Écart avec le 2e candidat &gt; 0.2 %</strong> (sinon ambigu)</li>
+        </ul>
+
+        <p>Si l'un des seuils échoue, l'utilisateur est invité à confirmer avec un <strong>PIN de secours</strong>.</p>
+
+        <h2><span class="material-symbols-outlined">storage</span> Stockage</h2>
+
+        <p>Toutes les données biométriques sont stockées dans <code>localStorage</code> du navigateur :</p>
+
+        <pre><code>// Structure utilisateur
+{
+  name: "Marie Dupont",
+  pin: "1234",              // optionnel
+  handVectors: [[...], ...], // 3 vecteurs géométriques
+  faceDescriptors: [[...]],  // descripteur 128-d (optionnel)
+  createdAt: 1234567890
+}</code></pre>
+
+        <p><strong>Aucune image</strong> n'est sauvegardée, seulement les vecteurs mathématiques. Et <strong>rien ne quitte votre navigateur</strong>.</p>
+
+        <h2><span class="material-symbols-outlined">bug_report</span> Le bug MediaPipe corrigé</h2>
+
+        <p>L'erreur originale :</p>
+        <pre><code>RuntimeError: Aborted(Module.arguments has been replaced
+with plain arguments_)</code></pre>
+
+        <p>Était causée par la <strong>recréation multiple de l'instance Hands</strong> à chaque changement de vue. Le module WASM de MediaPipe garde un état global ; le réinstancier le corrompt.</p>
+
+        <p><strong>Fix appliqué</strong> : une seule instance <code>hands</code> globale créée au premier usage, et les <code>Camera</code> MediaPipe sont recréées à la place — pas l'instance Hands.</p>
+
+        <h2><span class="material-symbols-outlined">rocket_launch</span> Limitations honnêtes</h2>
+
+        <ul>
+            <li>Démo éducative — <strong>pas pour production</strong></li>
+            <li>La précision dépend de l'éclairage et de la caméra</li>
+            <li>Pas de protection anti-replay pour le visage (un attaquant avec une photo peut passer)</li>
+            <li>Les modèles (~10 Mo) se téléchargent depuis un CDN à la première visite</li>
+        </ul>
+
+        <div class="doc-nav">
+            <a href="index.html">
+                <span class="material-symbols-outlined">play_arrow</span>
+                Essayer l'app
+            </a>
+            <a href="https://github.com/samueljimmyandria-cmd/megano/tree/main/palmid" class="ghost">
+                <span class="material-symbols-outlined">code</span>
+                Voir le code source
+            </a>
+        </div>
+    </div>
+</body>
+</html>
