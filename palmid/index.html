@@ -30,6 +30,12 @@
         </div>
     </header>
 
+    <!-- Model loader banner (bottom safe-area aware) -->
+    <div id="modelLoader" class="model-loader hidden">
+        <div class="spinner"></div>
+        <span id="modelLoaderText">Téléchargement des modèles IA…</span>
+    </div>
+
     <!-- Drawer -->
     <div id="drawerOverlay" class="drawer-overlay"></div>
     <aside id="drawer" class="drawer" aria-label="Liste des utilisateurs">
@@ -54,6 +60,7 @@
 
         <!-- HOME -->
         <section id="homeView" class="view active">
+            <div class="safe-bottom-spacer" style="height:0;"></div>
             <div class="hero">
                 <div class="hero-glow"></div>
                 <div class="hero-content">
@@ -228,6 +235,14 @@
                 </div>
 
                 <aside class="card side-card">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">
+                        <h3 style="margin:0;">Identification</h3>
+                        <div id="liveIndicator" class="live-indicator idle">
+                            <span class="rec-dot"></span>
+                            <span id="liveIndicatorText">En attente</span>
+                        </div>
+                    </div>
+
                     <div id="loginIdentity" class="identity-box hidden">
                         <span class="material-symbols-outlined">person</span>
                         <span id="loginIdentityText"></span>
@@ -239,8 +254,12 @@
                     <div id="loginScores" class="score-list">
                         <p class="muted small">Aucun score pour l'instant.</p>
                     </div>
+
+                    <h3 style="margin-top:16px;">Aperçus récents</h3>
+                    <div id="filmstrip" class="filmstrip"></div>
                 </aside>
             </div>
+            <div class="safe-bottom-spacer"></div>
         </section>
     </main>
 
