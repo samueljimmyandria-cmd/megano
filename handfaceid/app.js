@@ -400,6 +400,105 @@
   }
 
   // ============================================
+  // FACE LIVE VISUALIZATION
+  // ============================================
+  let liveFaceInterval = null;
+  let liveFaceVideo = null;
+  let liveFaceOverlay = null;
+  let lastLiveDescriptor = null;
+  let liveFaceCallback = null;
+
+  function stopFaceLiveVisualization() {
+    if (liveFaceInterval) {
+      clearInterval(liveFaceInterval);
+      liveFaceInterval = null;
+    }
+    liveFaceVideo = null;
+    liveFaceOverlay = null;
+    lastLiveDescriptor = null;
+    liveFaceCallback = null;
+    const e1 = $('overlayFaceEnroll');
+    const e2 = $('overlayFaceLogin');
+    if (e1) { e1.classList.add('hidden'); e1.getContext('2d').clearRect(0, 0, e1.width, e1.height); }
+    if (e2) { e2.classList.add('hidden'); e2.getContext('2d').clearRect(0, 0, e2.width, e2.height); }
+  }
+
+  function drawFaceBox(ctx, box) {
+    const x = box.x, y = box.y, w = box.width, h = box.height;
+    const cornerLen = Math.min(20, w / 4, h / 4);
+    ctx.strokeStyle = '#FF3D88';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    // top-left
+    ctx.moveTo(x, y + cornerLen); ctx.lineTo(x, y); ctx.lineTo(x + cornerLen, y);
+    // top-right
+    ctx.moveTo(x + w - cornerLen, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + cornerLen);
+    // bottom-right
+    ctx.moveTo(x + w, y + h - cornerLen); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w - cornerLen, y + h);
+    // bottom-left
+    ctx.moveTo(x + cornerLen, y + h); ctx.lineTo(x, y + h); ctx.lineTo(x, y + h - cornerLen);
+    ctx.stroke();
+  }
+
+  function startFaceLiveVisualization(videoEl, overlayCanvas, callback) {
+    if (!state.faceApiReady) {
+      loadFaceApi().then((ok) => {
+        if (ok) startFaceLiveVisualization(videoEl, overlayCanvas, callback);
+      });
+      return;
+    }
+    stopFaceLiveVisualization();
+    liveFaceVideo = videoEl;
+    liveFaceOverlay = overlayCanvas;
+    liveFaceCallback = callback || null;
+    overlayCanvas.classList.remove('hidden');
+
+    const tick = async () => {
+      const video = liveFaceVideo;
+      const overlay = liveFaceOverlay;
+      if (!video || !overlay) return;
+      if (video.readyState < 2) { setTimeout(tick, 250); return; }
+      if (overlay !== liveFaceOverlay) return; // swapped mid-flight
+
+      const w = video.videoWidth || 640;
+      const h = video.videoHeight || 480;
+      if (overlay.width !== w) overlay.width = w;
+      if (overlay.height !== h) overlay.height = h;
+      const ctx = overlay.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      try {
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.25 }))
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+
+        if (overlay !== liveFaceOverlay) return;
+
+        if (detection) {
+          lastLiveDescriptor = Array.from(detection.descriptor);
+          const box = detection.detection.box;
+          drawFaceBox(ctx, box);
+          try { faceapi.draw.drawFaceLandmarks(overlay, detection.landmarks); } catch {}
+          if (liveFaceCallback) liveFaceCallback(detection);
+        } else {
+          lastLiveDescriptor = null;
+          ctx.fillStyle = 'rgba(255,255,255,0.7)';
+          ctx.font = '600 14px Inter, system-ui, sans-serif';
+          ctx.fillText('🔍 Recherche de visage…', 12, 24);
+          if (liveFaceCallback) liveFaceCallback(null);
+        }
+      } catch (e) {
+        // silent — usually just a frame timing issue
+      }
+    };
+
+    tick();
+    liveFaceInterval = setInterval(tick, 350);
+  }
+
+  // ============================================
   // CAMERA MANAGEMENT
   // ============================================
   async function startCamera(videoEl, onResults, camera) {
@@ -462,6 +561,11 @@
       $('videoStatusLogin').classList.add('hidden');
       setBadge('mpStatus', 'ok', 'OK');
       setStatusMsg('statusMsgLogin', 'Caméra prête. Choisis un mode d\'identification.', 'info');
+      // Auto-start face live visualization if any user has face data
+      const users = loadUsers();
+      if (users.some((u) => u.faceDescriptors && u.faceDescriptors.length > 0)) {
+        startFaceLiveVisualization($('videoLogin'), $('overlayFaceLogin'));
+      }
     } catch (e) {
       $('videoStatusLogin').classList.add('hidden');
       setBadge('mpStatus', 'error', 'Erreur');
@@ -516,6 +620,13 @@
       btn.disabled = true;
       $('faceCaptureSection').classList.remove('hidden');
       setStatusMsg('statusMsgEnroll', '✅ 3 captures enregistrées. Tu peux ajouter un visage (optionnel) puis sauvegarder.', 'success');
+      // Auto-start face live visualization so user sees the tracking
+      startFaceLiveVisualization($('videoEnroll'), $('overlayFaceEnroll'), (det) => {
+        $('faceCaptureStatus').textContent = det
+          ? `✓ Visage détecté — score ${(det.detection.score * 100).toFixed(0)}%. Clique sur Capturer.`
+          : '🔍 Place ton visage bien en face…';
+        $('capFaceBtn').disabled = !det;
+      });
     }
   }
 
@@ -527,7 +638,17 @@
         return;
       }
     }
-    $('faceCaptureStatus').textContent = '🔍 Détection en cours…';
+    $('faceCaptureStatus').textContent = '🔍 Capture…';
+    // Use the live descriptor (already detected) if available
+    if (lastLiveDescriptor) {
+      state.tempFaceDescriptors = [lastLiveDescriptor];
+      $('capFaceBtn').disabled = true;
+      $('faceCaptureStatus').textContent = '✅ Visage enregistré.';
+      setStatusMsg('statusMsgEnroll', '✅ Visage capturé. Tu peux maintenant enregistrer.', 'success');
+      stopFaceLiveVisualization();
+      return;
+    }
+    // Fallback: do a fresh detection
     try {
       const video = $('videoEnroll');
       if (video.readyState < 2) throw new Error('Vidéo pas prête');
@@ -671,21 +792,35 @@
 
     const handVec = lastHandVectorLogin;
     const handDetected = handVec && handVec.length > 0;
+    const faceDesc = lastLiveDescriptor;
+    const faceDetected = !!faceDesc;
 
-    if (!handDetected) {
-      setStatusMsg('statusMsgLogin', '❌ Aucune main détectée.', 'error');
+    if (!handDetected && !faceDetected) {
+      setStatusMsg('statusMsgLogin', '❌ Aucune biométrie détectée.', 'error');
       return;
     }
 
     const scores = users.map((u) => {
       let handScore = null;
-      if (u.handVectors && u.handVectors.length > 0) {
+      if (handDetected && u.handVectors && u.handVectors.length > 0) {
         let total = 0;
         for (const v of u.handVectors) total += compareHandVectors(handVec, v);
         handScore = total / u.handVectors.length;
       }
-      const sum = handScore || 0;
-      return { name: u.name, score: sum, handScore, faceScore: null };
+
+      let faceScore = null;
+      if (faceDesc && u.faceDescriptors && u.faceDescriptors.length > 0) {
+        let best = -Infinity;
+        for (const descArr of u.faceDescriptors) {
+          const dist = faceEuclidean(faceDesc, descArr);
+          const sim = Math.max(0, 1 - dist / state.settings.faceThreshold);
+          if (sim > best) best = sim;
+        }
+        faceScore = best;
+      }
+
+      const sum = (handScore || 0) + (faceScore || 0);
+      return { name: u.name, score: sum, handScore, faceScore };
     });
 
     scores.sort((a, b) => b.score - a.score);
@@ -708,8 +843,9 @@
 
     incIdentifications();
 
-    const handPct = best.handScore !== null ? `👋 ${(best.handScore * 100).toFixed(0)}%` : '👋 —';
-    $('loginIdentity').innerHTML = `👤 <strong>${escapeHtml(best.name)}</strong> — ${(best.score * 100).toFixed(1)}% ${handPct}`;
+    const handPct = best.handScore !== null ? `👋 ${(best.handScore * 100).toFixed(0)}%` : '';
+    const facePct = best.faceScore !== null ? `🧑 ${(best.faceScore * 100).toFixed(0)}%` : '';
+    $('loginIdentity').innerHTML = `👤 <strong>${escapeHtml(best.name)}</strong> — ${(best.score * 100).toFixed(1)}% ${handPct} ${facePct}`;
     $('loginIdentity').classList.remove('hidden');
 
     if (!needPin) {
@@ -727,13 +863,14 @@
     $('loginScores').innerHTML = scores.map((s, i) => {
       const pct = (s.score * 100).toFixed(1);
       const handPart = s.handScore !== null ? `👋 ${(s.handScore * 100).toFixed(0)}%` : '👋 —';
+      const facePart = s.faceScore !== null ? `🧑 ${(s.faceScore * 100).toFixed(0)}%` : '🧑 —';
       const cls = i === 0 ? 'score-row best' : 'score-row';
       return `
         <div class="${cls}">
           <span class="score-name">${escapeHtml(s.name)}</span>
           <div class="score-bar-bg"><div class="score-bar-fill" style="width:${Math.min(pct, 100)}%"></div></div>
           <span class="score-pct">${pct}%</span>
-          <div class="score-detail">${handPart}</div>
+          <div class="score-detail">${handPart} ${facePart}</div>
         </div>`;
     }).join('');
 
@@ -763,19 +900,33 @@
     // Camera cleanup — DO NOT touch hands instance
     if (viewId !== 'enroll' && cameraEnroll) { stopCamera(cameraEnroll); cameraEnroll = null; }
     if (viewId !== 'login' && cameraLogin) { stopCamera(cameraLogin); cameraLogin = null; }
+    if (viewId !== 'enroll' && viewId !== 'login') stopFaceLiveVisualization();
     if (loginTimer) { clearInterval(loginTimer); loginTimer = null; }
 
     if (viewId === 'enroll') {
       if (state.pendingFaceUpgrade) {
         $('enrollTitle').textContent = `🧑 Ajout visage`;
         $('formSection').classList.add('hidden');
+        $('faceCaptureSection').classList.remove('hidden');
+        $('capFaceBtn').disabled = true;
       } else {
         $('enrollTitle').textContent = '📝 Inscription';
         $('enrollSubtitle').textContent = 'Capture ta main 3 fois sous des angles légèrement différents.';
         $('formSection').classList.remove('hidden');
         resetEnrollState();
       }
-      setTimeout(startEnrollCamera, 100);
+      setTimeout(() => {
+        startEnrollCamera().then(() => {
+          if (state.pendingFaceUpgrade) {
+            startFaceLiveVisualization($('videoEnroll'), $('overlayFaceEnroll'), (det) => {
+              $('faceCaptureStatus').textContent = det
+                ? `✓ Visage détecté — score ${(det.detection.score * 100).toFixed(0)}%. Clique sur Capturer.`
+                : '🔍 Place ton visage bien en face…';
+              $('capFaceBtn').disabled = !det;
+            });
+          }
+        });
+      }, 100);
     } else if (viewId === 'login') {
       setTimeout(startLoginCamera, 100);
     } else {
