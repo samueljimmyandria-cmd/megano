@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#0a0a14" />
+<title>Hand + Face ID — Mavis Secure</title>
+<meta name="description" content="Reconnaissance palmaire et faciale 100% locale, sans serveur." />
+<link rel="stylesheet" href="style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ============ LOADING OVERLAY ============ -->
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-card">
+    <div class="loading-logo">✋ 🧑</div>
+    <h2>Initialisation des modèles IA</h2>
+    <p id="loadingStep">Chargement…</p>
+    <div class="progress-track"><div id="loadingBar" class="progress-fill"></div></div>
+    <div class="loading-tips">
+      <span class="tip">💾 100% local</span>
+      <span class="tip">🔐 Aucune donnée envoyée</span>
+      <span class="tip">📷 Caméra requise</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HEADER ============ -->
+<header class="app-header">
+  <button id="burgerBtn" class="icon-btn" aria-label="Menu">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <h1 class="app-title"><span class="title-icon">✋</span><span class="title-text">Hand <span class="title-plus">+</span> Face ID</span></h1>
+  <button id="settingsBtn" class="icon-btn" aria-label="Réglages">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+</header>
+
+<!-- ============ DRAWER (user list) ============ -->
+<div id="drawerOverlay" class="drawer-overlay"></div>
+<aside id="drawer" class="drawer">
+  <div class="drawer-head">
+    <h2>👥 Utilisateurs</h2>
+    <button id="closeDrawer" class="icon-btn ghost" aria-label="Fermer">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div id="drawerList" class="drawer-list"></div>
+  <div class="drawer-foot">
+    <button id="exportUsersBtn" class="btn btn-ghost btn-sm">📥 Exporter</button>
+    <button id="importUsersBtn" class="btn btn-ghost btn-sm">📤 Importer</button>
+    <button id="clearAllBtn" class="btn btn-danger btn-sm">🗑 Tout supprimer</button>
+  </div>
+</aside>
+
+<!-- ============ SETTINGS DRAWER ============ -->
+<aside id="settingsDrawer" class="drawer right">
+  <div class="drawer-head">
+    <h2>⚙ Réglages</h2>
+    <button id="closeSettings" class="icon-btn ghost" aria-label="Fermer">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="settings-body">
+    <label class="setting-row">
+      <span>Seuil de correspondance visage</span>
+      <input type="range" id="settingFaceThreshold" min="0.3" max="0.8" step="0.05" value="0.6" />
+      <span class="setting-val" id="faceThresholdVal">0.60</span>
+    </label>
+    <label class="setting-row">
+      <span>Seuil de correspondance main</span>
+      <input type="range" id="settingHandThreshold" min="0.3" max="1" step="0.05" value="0.8" />
+      <span class="setting-val" id="handThresholdVal">0.80</span>
+    </label>
+    <label class="setting-row">
+      <span>Écart minimum entre utilisateurs</span>
+      <input type="range" id="settingMinGap" min="0.001" max="0.05" step="0.001" value="0.002" />
+      <span class="setting-val" id="minGapVal">0.002</span>
+    </label>
+    <label class="setting-row">
+      <span>Caméra</span>
+      <select id="settingCamera"></select>
+    </label>
+    <div class="setting-divider"></div>
+    <div class="setting-info">
+      <div>👋 MediaPipe Hands <span id="mpStatus" class="badge pending">…</span></div>
+      <div>🧑 Face-API.js <span id="faStatus" class="badge pending">…</span></div>
+      <div>📷 Caméra <span id="camStatus" class="badge pending">…</span></div>
+    </div>
+    <div class="setting-divider"></div>
+    <button id="showTutorialBtn" class="btn btn-ghost">❓ Voir le tutoriel</button>
+    <button id="aboutBtn" class="btn btn-ghost">ℹ️ À propos</button>
+  </div>
+</aside>
+
+<!-- ============ TUTORIAL ============ -->
+<div id="tutorial" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" data-close="tutorial">×</button>
+    <h2>📖 Tutoriel rapide</h2>
+    <ol class="tutorial-steps">
+      <li><strong>Première utilisation</strong> — autorise l'accès à la caméra quand le navigateur le demande.</li>
+      <li><strong>Inscris-toi</strong> — appuie sur le bouton ➕, entre ton nom, capture ta main 3 fois sous différents angles.</li>
+      <li><strong>Ajoute un visage</strong> (optionnel) — améliore la sécurité, recommandé.</li>
+      <li><strong>Connecte-toi</strong> — depuis l'onglet d'identification, place ta main devant la caméra.</li>
+      <li><strong>Sécurité PIN</strong> — si le score est trop bas, le PIN de secours est demandé.</li>
+    </ol>
+    <p class="hint">💡 Tous les calculs se font <strong>localement</strong> dans ton navigateur. Aucune image n'est envoyée à un serveur.</p>
+  </div>
+</div>
+
+<!-- ============ ABOUT ============ -->
+<div id="about" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" data-close="about">×</button>
+    <h2>ℹ️ À propos</h2>
+    <p>Hand + Face ID est une démo de reconnaissance biométrique <strong>100% locale</strong>. Les modèles utilisés :</p>
+    <ul>
+      <li><strong>MediaPipe Hands</strong> (Google) — détection des 21 points-clés de la main</li>
+      <li><strong>Face-API.js</strong> (face-api.js) — reconnaissance faciale via TensorFlow.js</li>
+    </ul>
+    <p>Les données biométriques (vecteurs mathématiques) sont stockées dans le <code>localStorage</code> du navigateur, jamais transmises.</p>
+    <p class="hint">⚠️ Démo de recherche — ne pas utiliser comme seule sécurité pour des données sensibles.</p>
+  </div>
+</div>
+
+<!-- ============ MAIN CONTENT ============ -->
+<main id="mainContent" class="main">
+
+  <!-- Home -->
+  <section id="homeView" class="view active">
+    <div class="hero-card">
+      <div class="hero-emoji">✋🧑</div>
+      <h2>Reconnaissance palmaire & faciale</h2>
+      <p>Identifie-toi sans mot de passe. Tout se passe dans ton navigateur.</p>
+      <div class="hero-actions">
+        <button id="goToLoginBtn" class="btn btn-primary">
+          🔍 M'identifier
+        </button>
+        <button id="goToEnrollBtn" class="btn btn-accent">
+          ➕ Nouvel utilisateur
+        </button>
+      </div>
+    </div>
+
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card">
+        <div class="stat-num" id="statUsers">0</div>
+        <div class="stat-label">Utilisateurs</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statFaces">0</div>
+        <div class="stat-label">Avec visage</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statIdentifications">0</div>
+        <div class="stat-label">Identifications</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Enroll -->
+  <section id="enrollView" class="view">
+    <div class="page-head">
+      <h2 id="enrollTitle">📝 Inscription</h2>
+      <p id="enrollSubtitle">Capture ta main 3 fois sous des angles légèrement différents.</p>
+    </div>
+
+    <div class="camera-card">
+      <div class="video-wrapper">
+        <video id="videoEnroll" autoplay playsinline muted></video>
+        <canvas id="overlayEnroll"></canvas>
+        <canvas id="overlayFaceEnroll"></canvas>
+        <div class="video-overlay-status" id="videoStatusEnroll">
+          <div class="spinner"></div>
+          <span>Démarrage caméra…</span>
+        </div>
+      </div>
+
+      <div class="capture-progress" id="captureProgress">
+        <div class="cap-pip" data-step="1"></div>
+        <div class="cap-pip" data-step="2"></div>
+        <div class="cap-pip" data-step="3"></div>
+      </div>
+
+      <button id="capHandBtn" class="btn btn-accent" disabled>
+        <span class="btn-icon">📸</span>
+        <span class="btn-text">Capturer la main</span>
+        <span class="btn-counter" id="handCounter">3 restantes</span>
+      </button>
+
+      <div id="faceCaptureSection" class="face-section hidden">
+        <div class="section-divider">
+          <span>Optionnel</span>
+        </div>
+        <p class="section-hint">🧑 Ajoute une capture faciale pour une authentification plus fiable.</p>
+        <button id="capFaceBtn" class="btn btn-face">
+          <span class="btn-icon">🧑</span>
+          <span class="btn-text">Capturer mon visage</span>
+        </button>
+        <p id="faceCaptureStatus" class="status-line"></p>
+      </div>
+
+      <div id="formSection" class="form-section">
+        <div class="section-divider">
+          <span>Identité</span>
+        </div>
+        <input type="text" id="username" placeholder="Nom complet (ex: Alice)" autocomplete="off" />
+        <span id="nameDisplay" class="hidden name-display"></span>
+        <input type="password" id="pinEnroll" maxlength="6" inputmode="numeric" placeholder="PIN de secours (optionnel, 4-6 chiffres)" autocomplete="off" />
+        <button id="saveEnrollBtn" class="btn btn-primary">
+          <span class="btn-icon">✅</span>
+          Enregistrer
+        </button>
+      </div>
+
+      <div id="statusMsgEnroll" class="status-msg info"></div>
+    </div>
+  </section>
+
+  <!-- Login -->
+  <section id="loginView" class="view">
+    <div class="page-head">
+      <h2>🔍 Identification</h2>
+      <p>Place ta main devant la caméra pour t'identifier.</p>
+    </div>
+
+    <div class="camera-card">
+      <div class="login-identity hidden" id="loginIdentity"></div>
+
+      <div class="video-wrapper">
+        <video id="videoLogin" autoplay playsinline muted></video>
+        <canvas id="overlayLogin"></canvas>
+        <canvas id="overlayFaceLogin"></canvas>
+        <div class="video-overlay-status hidden" id="videoStatusLogin">
+          <div class="spinner"></div>
+          <span>Démarrage caméra…</span>
+        </div>
+        <div class="countdown hidden" id="countdownDisplay"></div>
+      </div>
+
+      <div class="login-actions">
+        <button id="startLoginBtn" class="btn btn-accent">
+          <span class="btn-icon">🔍</span>
+          Identifier (5s)
+        </button>
+        <button id="startLoginFastBtn" class="btn btn-speed">
+          <span class="btn-icon">⚡</span>
+          Rapide (1s)
+        </button>
+      </div>
+
+      <input type="password" id="loginPinInput" class="hidden pin-input" maxlength="6" placeholder="PIN de secours" autocomplete="off" />
+
+      <div id="statusMsgLogin" class="status-msg info">Caméra prête. Choisis un mode d'identification.</div>
+      <div id="loginScores" class="scores-list"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ TOAST ============ -->
+<div id="toast" class="toast"></div>
+
+<!-- ============ BOTTOM NAV ============ -->
+<nav class="bottom-nav">
+  <button id="navHomeBtn" class="nav-btn active">
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-5h-2v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+    </span>
+    <span>Accueil</span>
+  </button>
+  <button id="navAddBtn" class="nav-btn nav-add">
+    <span class="nav-add-circle">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+    </span>
+  </button>
+  <button id="navListBtn" class="nav-btn">
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </span>
+    <span>Liste</span>
+  </button>
+</nav>
+
+<script src="app.js"></script>
+</body>
+</html>
